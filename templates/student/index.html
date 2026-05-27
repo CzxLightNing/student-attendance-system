@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}签到 - 学生考勤管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">签到</h3>
+
+                {% if not user.student_class %}
+                <div class="alert alert-warning">
+                    <strong>提示：</strong>您尚未被分配到任何班级，请联系管理员将您加入班级后即可签到。
+                </div>
+                {% else %}
+                <div class="text-center mb-3">
+                    <span class="text-muted">当前班级：</span>
+                    <strong>{{ user.student_class.name }}</strong>
+                </div>
+
+                {% if active_code and already_signed %}
+                <div class="alert alert-success text-center">
+                    <strong>今日已签到！</strong><br>
+                    <small>签到时间：已签到</small>
+                </div>
+                {% endif %}
+
+                <form id="checkin-form" onsubmit="handleCheckin(event)">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="checkin-code" class="form-label">请输入签到码</label>
+                        <input type="text" id="checkin-code" class="form-control form-control-lg text-center" maxlength="4" pattern="[0-9]{4}" placeholder="请输入 4 位数字签到码" required autofocus autocomplete="off">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">提交签到</button>
+                    </div>
+                </form>
+
+                <div id="checkin-result" class="mt-3" style="display: none;"></div>
+
+                {% if active_code and not already_signed %}
+                <div class="alert alert-info mt-3">
+                    <small>当前班级有有效签到码，请及时签到</small>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    /**
+     * 处理签到表单提交
+     * 使用 fetch API 发送 AJAX 请求，不刷新页面
+     */
+    async function handleCheckin(event) {
+        event.preventDefault();
+
+        const codeInput = document.getElementById('checkin-code');
+        const submitBtn = document.getElementById('submit-btn');
+        const resultDiv = document.getElementById('checkin-result');
+        const code = codeInput.value.trim();
+
+        // 前端校验：签到码必须为 4 位数字
+        if (!/^\d{4}$/.test(code)) {
+            showResult('请输入 4 位数字签到码', 'danger');
+            return;
+        }
+
+        // 禁用提交按钮，防止重复提交
+        submitBtn.disabled = true;
+        submitBtn.textContent = '签到中...';
+
+        try {
+            const response = await apiFetch('{% url "attendance:student_checkin" %}', {
+                method: 'POST',
+                body: JSON.stringify({ code: code }),
+            });
+
+            if (response.success) {
+                showResult(response.message + '<br><small>签到时间：' + response.data.timestamp + '</small>', 'success');
+                codeInput.disabled = true;
+                submitBtn.style.display = 'none';
+            } else {
+                showResult(response.message, 'danger');
+                codeInput.value = '';
+                codeInput.focus();
+            }
+        } catch (error) {
+            showResult(error.message || '签到失败，请稍后重试', 'danger');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交签到';
+        }
+    }
+
+    /**
+     * 显示签到结果提示信息
+     * @param {string} message - 提示信息
+     * @param {string} type - 提示类型（success/danger/warning/info）
+     */
+    function showResult(message, type) {
+        const resultDiv = document.getElementById('checkin-result');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+    }
+</script>
+{% endblock %}

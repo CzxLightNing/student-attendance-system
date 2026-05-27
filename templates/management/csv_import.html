@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{% if import_type == '班级' %}导入班级{% else %}导入{{ import_type }}{% endif %} - 管理面板{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">CSV 批量导入{{ import_type }}</h3>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <h5 class="mb-3">操作说明</h5>
+        <ol>
+            <li>下载 CSV 模板文件，按照模板格式填写数据</li>
+            <li>上传填写好的 CSV 文件进行批量导入</li>
+            <li>仅支持 <code>.csv</code> 格式文件，大小不超过 5MB</li>
+        </ol>
+        <a href="{{ template_url }}" class="btn btn-outline-primary">
+            下载 {{ import_type }} CSV 模板
+        </a>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <h5 class="mb-3">上传文件</h5>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="csv_file" class="form-label">选择 CSV 文件</label>
+                <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv" required>
+            </div>
+            <div class="d-grid gap-2 d-md-flex">
+                <button type="submit" class="btn btn-success">开始导入</button>
+                {% if import_type == '班级' %}
+                <a href="{% url 'management_app:management_class_list' %}" class="btn btn-outline-secondary">返回班级列表</a>
+                {% else %}
+                <a href="{% url 'management_app:management_user_list' %}" class="btn btn-outline-secondary">返回用户列表</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

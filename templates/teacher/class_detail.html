@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% block title %}{{ class_group.name }} - 签到管理 - 学生考勤管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>{{ class_group.name }} - 签到管理</h3>
+    <div>
+        <a href="{% url 'attendance:teacher_student_list' class_group.id %}" class="btn btn-outline-info btn-sm">学生名单</a>
+        <a href="{% url 'attendance:teacher_attendance_history' class_group.id %}" class="btn btn-outline-secondary btn-sm">考勤历史</a>
+    </div>
+</div>
+
+<!-- 签到码生成区域 -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">签到码管理</h5>
+    </div>
+    <div class="card-body">
+        <form id="generate-form" onsubmit="handleGenerate(event)">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="duration" class="form-label">有效时长（分钟）</label>
+                    <select id="duration" class="form-select">
+                        <option value="5">5 分钟</option>
+                        <option value="10" selected>10 分钟</option>
+                        <option value="15">15 分钟</option>
+                        <option value="30">30 分钟</option>
+                        <option value="60">60 分钟</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-success" id="generate-btn">
+                        <span id="generate-btn-text">生成签到码</span>
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deactivate-btn" onclick="handleDeactivate()" style="display: none;">
+                        手动失效签到码
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- 当前有效签到码展示 -->
+        <div id="active-code-display" class="mt-3" style="display: none;">
+            <div class="alert alert-success">
+                <strong>当前签到码：</strong><span id="current-code" class="display-6 ms-2"></span>
+                <br>
+                <small>剩余时间：<strong id="countdown-timer"></strong></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 签到实时监控区域 -->
+<div id="status-area" style="display: none;">
+    <div class="row">
+        <!-- 已签到学生区域 -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow border-success">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">已签到学生</h5>
+                    <span class="badge bg-light text-success" id="signed-count-badge">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="signed-list" class="list-group"></div>
+                    <p id="no-signed-yet" class="text-muted text-center mb-0">暂无学生签到</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 未签到学生区域 -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">未签到学生</h5>
+                    <span class="badge bg-light text-danger" id="unsigned-count-badge">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="unsigned-list" class="list-group"></div>
+                    <p id="all-signed" class="text-muted text-center mb-0" style="display: none;">所有学生已签到！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 当前签到码 ID 和轮询定时器
+    let activeCodeId = null;
+    let pollTimer = null;
+    let countdownTimer = null;
+
+    {% if active_code %}
+    // 页面加载时，如果已有有效签到码，初始化显示
+    activeCodeId = {{ active_code.id }};
+    {% endif %}
+
+    /**
+     * 处理生成签到码请求
+     * 发送 AJAX POST 请求，成功后显示签到码并开始轮询
+     */
+    async function handleGenerate(event) {
+        event.preventDefault();
+
+        const generateBtn = document.getElementById('generate-btn');
+        const generateBtnText = document.getElementById('generate-btn-text');
+        const duration = document.getElementById('duration').value;
+
+        generateBtn.disabled = true;
+        generateBtnText.textContent = '生成中...';
+
+        try {
+            const response = await apiFetch('{% url "attendance:teacher_generate_code" class_group.id %}', {
+                method: 'POST',
+                body: JSON.stringify({
+                    duration: parseInt(duration)
+                }),
+            });
+
+            if (response.success) {
+                activeCodeId = response.data.id || Date.now(); // 使用时间戳作为临时 ID
+                showActiveCode(response.data.code, response.data.expires_at, response.data.duration);
+                startPolling();
+
+                // 显示失效按钮
+                document.getElementById('deactivate-btn').style.display = 'inline-block';
+            } else {
+                alert(response.message || '生成失败');
+            }
+        } catch (error) {
+            alert(error.message || '生成签到码失败');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtnText.textContent = '生成签到码';
+        }
+    }
+
+    /**
+     * 处理手动失效签到码请求
+     */
+    async function handleDeactivate() {
+        if (!confirm('确定要手动失效当前签到码吗？')) return;
+
+        try {
+            const response = await apiFetch('{% url "attendance:teacher_deactivate_code" class_group.id %}', {
+                method: 'POST',
+                body: JSON.stringify({}),
+            });
+
+            if (response.success) {
+                stopPolling();
+                hideActiveCode();
+                alert('签到码已失效');
+            } else {
+                alert(response.message || '操作失败');
+            }
+        } catch (error) {
+            alert(error.message || '操作失败');
+        }
+    }
+
+    /**
+     * 显示当前有效的签到码信息
+     * @param {string} code - 签到码
+     * @param {string} expiresAt - 过期时间（ISO 格式字符串）
+     * @param {number} duration - 有效时长（分钟）
+     */
+    function showActiveCode(code, expiresAt, duration) {
+        document.getElementById('active-code-display').style.display = 'block';
+        document.getElementById('current-code').textContent = code;
+        document.getElementById('status-area').style.display = 'block';
+
+        // 启动倒计时
+        const expiresTime = new Date(expiresAt).getTime();
+        clearInterval(countdownTimer);
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const remaining = expiresTime - now;
+
+            if (remaining <= 0) {
+                document.getElementById('countdown-timer').textContent = '已过期';
+                clearInterval(countdownTimer);
+                return;
+            }
+
+            const minutes = Math.floor(remaining / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            document.getElementById('countdown-timer').textContent =
+                minutes + ' 分 ' + seconds + ' 秒';
+        }
+
+        updateCountdown();
+        countdownTimer = setInterval(updateCountdown, 1000);
+    }
+
+    /**
+     * 隐藏签到码显示区域
+     */
+    function hideActiveCode() {
+        document.getElementById('active-code-display').style.display = 'none';
+        document.getElementById('status-area').style.display = 'none';
+        document.getElementById('deactivate-btn').style.display = 'none';
+        clearInterval(countdownTimer);
+    }
+
+    /**
+     * 开始轮询签到状态（每 3 秒一次）
+     */
+    function startPolling() {
+        // 如果已有轮询，先停止
+        stopPolling();
+
+        // 立即查询一次
+        pollStatus();
+
+        // 每 3 秒查询一次
+        pollTimer = setInterval(pollStatus, 3000);
+    }
+
+    /**
+     * 停止轮询
+     */
+    function stopPolling() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    /**
+     * 轮询签到状态 AJAX 请求
+     */
+    async function pollStatus() {
+        // 需要先同步获取最新的 active_code_id
+        try {
+            const response = await apiFetch('{% url "attendance:teacher_code_status" 0 %}'.replace('0', activeCodeId || 0));
+
+            if (response.success) {
+                updateStatusDisplay(response.data);
+            }
+        } catch (error) {
+            console.error('轮询签到状态失败:', error);
+        }
+    }
+
+    /**
+     * 更新签到状态显示
+     * @param {Object} data - 签到状态数据
+     */
+    function updateStatusDisplay(data) {
+        const signedList = document.getElementById('signed-list');
+        const unsignedList = document.getElementById('unsigned-list');
+        const signedCountBadge = document.getElementById('signed-count-badge');
+        const unsignedCountBadge = document.getElementById('unsigned-count-badge');
+        const noSignedYet = document.getElementById('no-signed-yet');
+        const allSigned = document.getElementById('all-signed');
+
+        // 更新计数徽章
+        signedCountBadge.textContent = data.signed_count + ' / ' + data.total_count;
+        unsignedCountBadge.textContent = data.unsigned_students.length;
+
+        // 更新已签到列表
+        signedList.innerHTML = '';
+        if (data.signed_students.length > 0) {
+            noSignedYet.style.display = 'none';
+            data.signed_students.forEach(function (student) {
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-success d-flex justify-content-between align-items-center';
+                item.innerHTML = '<span>' + student.name + ' (' + student.student_id + ')</span>' +
+                    '<small class="text-muted">' + student.timestamp + '</small>';
+                signedList.appendChild(item);
+            });
+        } else {
+            noSignedYet.style.display = 'block';
+        }
+
+        // 更新未签到列表
+        unsignedList.innerHTML = '';
+        if (data.unsigned_students.length > 0) {
+            allSigned.style.display = 'none';
+            data.unsigned_students.forEach(function (student) {
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-danger d-flex justify-content-between align-items-center';
+                item.innerHTML = '<span>' + student.name + ' (' + student.student_id + ')</span>' +
+                    '<span class="badge bg-danger">未签到</span>';
+                unsignedList.appendChild(item);
+            });
+        } else {
+            allSigned.style.display = 'block';
+        }
+    }
+
+    {% if active_code and active_code.is_active %}
+    // 页面加载时已有有效签到码：直接显示并开始轮询
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('deactivate-btn').style.display = 'inline-block';
+        showActiveCode(
+            '{{ active_code.code }}',
+            '{{ active_code.expires_at.isoformat }}',
+            10
+        );
+        startPolling();
+    });
+    {% endif %}
+</script>
+{% endblock %}

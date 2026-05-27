@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}我的班级 - 学生考勤管理系统{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">我的班级</h3>
+
+{% if classes %}
+<div class="row">
+    {% for class_group in classes %}
+    <div class="col-md-4 col-lg-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">{{ class_group.name }}</h5>
+                <p class="card-text text-muted">{{ class_group.grade }}</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'attendance:teacher_class_detail' class_group.id %}" class="btn btn-primary btn-sm">签到管理</a>
+                    <a href="{% url 'attendance:teacher_student_list' class_group.id %}" class="btn btn-outline-info btn-sm">学生名单</a>
+                    <a href="{% url 'attendance:teacher_attendance_history' class_group.id %}" class="btn btn-outline-secondary btn-sm">考勤历史</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    <strong>提示：</strong>您当前未被分配管理任何班级，请联系管理员为您分配班级。
+</div>
+{% endif %}
+{% endblock %}

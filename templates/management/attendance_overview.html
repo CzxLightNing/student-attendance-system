@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}考勤总览 - 管理面板{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">考勤总览 - 所有班级</h3>
+
+{% if class_stats %}
+<div class="row">
+    {% for stat in class_stats %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ stat.name }}</h5>
+                <p class="text-muted mb-2">{{ stat.grade }} | {{ stat.total_students }} 名学生</p>
+                {% if stat.latest_attendance %}
+                <hr>
+                <p class="mb-1"><strong>最近签到码：</strong>{{ stat.latest_attendance.code }}</p>
+                <p class="mb-1"><strong>创建时间：</strong>{{ stat.latest_attendance.created_at|date:"Y-m-d H:i" }}</p>
+                <p class="mb-1">
+                    <strong>签到率：</strong>
+                    {{ stat.latest_attendance.signed_count }} / {{ stat.latest_attendance.total }}
+                    {% if stat.latest_attendance.total > 0 %}
+                    （{{ stat.latest_attendance.signed_count|floatformat:0 }} / {{ stat.latest_attendance.total|floatformat:0 }}）
+                    {% endif %}
+                </p>
+                {% else %}
+                <hr>
+                <p class="text-muted mb-0">暂无考勤记录</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">暂无班级数据</div>
+{% endif %}
+{% endblock %}

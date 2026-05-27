@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}考勤详情 - 签到码 {{ attendance_code.code }} - 学生考勤管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>考勤详情</h3>
+    <a href="{% url 'attendance:teacher_export_excel' attendance_code.id %}" class="btn btn-success">
+        导出 Excel
+    </a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <table class="table table-sm">
+            <tr>
+                <th style="width: 120px;">班级：</th>
+                <td>{{ attendance_code.class_group.name }}</td>
+                <th style="width: 120px;">签到码：</th>
+                <td><strong>{{ attendance_code.code }}</strong></td>
+            </tr>
+            <tr>
+                <th>创建教师：</th>
+                <td>{{ attendance_code.created_by.last_name }}{{ attendance_code.created_by.first_name }}</td>
+                <th>创建时间：</th>
+                <td>{{ attendance_code.created_at|date:"Y-m-d H:i:s" }}</td>
+            </tr>
+            <tr>
+                <th>过期时间：</th>
+                <td>{{ attendance_code.expires_at|date:"Y-m-d H:i:s" }}</td>
+                <th>状态：</th>
+                <td>
+                    {% if attendance_code.is_active %}
+                    <span class="badge bg-success">有效</span>
+                    {% else %}
+                    <span class="badge bg-secondary">已失效</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>签到统计：</th>
+                <td colspan="3">
+                    应到 <strong>{{ total_students }}</strong> 人，
+                    实到 <strong class="text-success">{{ signed_count }}</strong> 人，
+                    缺勤 <strong class="text-danger">{{ unsigned_students|length }}</strong> 人
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 已签到学生列表 -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow border-success h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">已签到学生（{{ signed_count }}）</h5>
+            </div>
+            <div class="card-body">
+                {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>学号</th>
+                                <th>姓名</th>
+                                <th>签到时间</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                            <tr>
+                                <td>{{ record.student.student_id|default:'-' }}</td>
+                                <td>{{ record.student.last_name }}{{ record.student.first_name }}</td>
+                                <td>{{ record.timestamp|date:"H:i:s" }}</td>
+                                <td>
+                                    {% if record.status == '正常' %}
+                                    <span class="badge bg-success">正常</span>
+                                    {% elif record.status == '迟到' %}
+                                    <span class="badge bg-warning text-dark">迟到</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">暂无签到记录</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 未签到学生列表 -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow border-danger h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">未签到学生（{{ unsigned_students|length }}）</h5>
+            </div>
+            <div class="card-body">
+                {% if unsigned_students %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>学号</th>
+                                <th>姓名</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in unsigned_students %}
+                            <tr>
+                                <td>{{ student.student_id|default:'-' }}</td>
+                                <td>{{ student.last_name }}{{ student.first_name }}</td>
+                                <td><span class="badge bg-danger">缺勤</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-success text-center mb-0">所有学生已签到！</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-3">
+    <a href="{% url 'attendance:teacher_class_detail' attendance_code.class_group.id %}" class="btn btn-outline-primary">
+        返回签到管理
+    </a>
+</div>
+{% endblock %}

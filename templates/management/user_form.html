@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }}用户 - 管理面板{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">{{ action }}用户</h3>
+
+{% if errors %}
+<div class="alert alert-danger">
+    <ul class="mb-0">
+        {% for error in errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="card shadow">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_role" class="form-label">角色 <span class="text-danger">*</span></label>
+                <select name="role" id="id_role" class="form-select" {% if edit_user %}disabled{% endif %} onchange="toggleUserFields()">
+                    <option value="student" {% if form_data.role == 'student' %}selected{% elif edit_user and edit_user.role == 'student' %}selected{% endif %}>学生</option>
+                    <option value="teacher" {% if form_data.role == 'teacher' %}selected{% elif edit_user and edit_user.role == 'teacher' %}selected{% endif %}>教师</option>
+                </select>
+                {% if edit_user %}
+                <input type="hidden" name="role" value="{{ edit_user.role }}">
+                {% endif %}
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <label for="id_last_name" class="form-label">姓 <span class="text-danger">*</span></label>
+                    <input type="text" name="last_name" id="id_last_name" class="form-control" value="{% if edit_user %}{{ form_data.last_name|default:edit_user.last_name }}{% else %}{{ form_data.last_name|default:'' }}{% endif %}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="id_first_name" class="form-label">名</label>
+                    <input type="text" name="first_name" id="id_first_name" class="form-control" value="{% if edit_user %}{{ form_data.first_name|default:edit_user.first_name }}{% else %}{{ form_data.first_name|default:'' }}{% endif %}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_username" class="form-label">用户名 <span class="text-danger">*</span></label>
+                <input type="text" name="username" id="id_username" class="form-control" value="{% if edit_user %}{{ form_data.username|default:edit_user.username }}{% else %}{{ form_data.username|default:'' }}{% endif %}" {% if edit_user %}readonly{% endif %} required>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_email" class="form-label">邮箱</label>
+                <input type="email" name="email" id="id_email" class="form-control" value="{% if edit_user %}{{ form_data.email|default:edit_user.email }}{% else %}{{ form_data.email|default:'' }}{% endif %}">
+            </div>
+
+            <div id="student_fields" {% if edit_user and edit_user.role != 'student' %}style="display: none;"{% endif %}>
+                <div class="mb-3">
+                    <label for="id_student_id" class="form-label">学号 <span class="text-danger">*</span></label>
+                    <input type="text" name="student_id" id="id_student_id" class="form-control" value="{% if edit_user %}{{ form_data.student_id|default:edit_user.student_id }}{% else %}{{ form_data.student_id|default:'' }}{% endif %}">
+                </div>
+                <div class="mb-3">
+                    <label for="id_class_id" class="form-label">所属班级</label>
+                    <select name="class_id" id="id_class_id" class="form-select">
+                        <option value="">-- 请选择班级 --</option>
+                        {% for c in classes %}
+                        <option value="{{ c.id }}" {% if edit_user and edit_user.student_class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div id="teacher_fields" {% if not edit_user or edit_user.role != 'teacher' %}style="display: none;"{% endif %}>
+                <div class="mb-3">
+                    <label for="id_teacher_id" class="form-label">工号 <span class="text-danger">*</span></label>
+                    <input type="text" name="teacher_id" id="id_teacher_id" class="form-control" value="{% if edit_user %}{{ form_data.teacher_id|default:edit_user.teacher_id }}{% else %}{{ form_data.teacher_id|default:'' }}{% endif %}">
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{% url 'management_app:management_user_list' %}" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleUserFields() {
+        const roleSelect = document.getElementById('id_role');
+        const studentFields = document.getElementById('student_fields');
+        const teacherFields = document.getElementById('teacher_fields');
+        if (roleSelect.value === 'student') {
+            studentFields.style.display = 'block';
+            teacherFields.style.display = 'none';
+        } else {
+            studentFields.style.display = 'none';
+            teacherFields.style.display = 'block';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', toggleUserFields);
+</script>
+{% endblock %}

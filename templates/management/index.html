@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}管理面板 - 学生考勤管理系统{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">管理面板</h3>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card shadow border-primary h-100">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-primary">{{ total_classes }}</h1>
+                <p class="text-muted mb-0">班级总数</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'management_app:management_class_list' %}" class="btn btn-outline-primary btn-sm w-100">管理班级</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card shadow border-success h-100">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-success">{{ total_students }}</h1>
+                <p class="text-muted mb-0">学生总数</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'management_app:management_user_list' %}?role=student" class="btn btn-outline-success btn-sm w-100">查看学生</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card shadow border-info h-100">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-info">{{ total_teachers }}</h1>
+                <p class="text-muted mb-0">教师总数</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'management_app:management_user_list' %}?role=teacher" class="btn btn-outline-info btn-sm w-100">查看教师</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card shadow border-warning h-100">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-warning">{{ today_records }}</h1>
+                <p class="text-muted mb-0">今日签到次数</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card shadow border-danger h-100">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-danger">{{ pending_users }}</h1>
+                <p class="text-muted mb-0">待审核账号</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'management_app:management_user_list' %}" class="btn btn-outline-danger btn-sm w-100">审核账号</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <h5 class="mb-3">快捷操作</h5>
+        <div class="d-grid gap-2 d-md-flex">
+            <a href="{% url 'management_app:management_class_create' %}" class="btn btn-primary">创建班级</a>
+            <a href="{% url 'management_app:management_user_create' %}" class="btn btn-success">添加用户</a>
+            <a href="{% url 'management_app:management_class_csv_import' %}" class="btn btn-info">导入班级 CSV</a>
+            <a href="{% url 'management_app:management_user_csv_import' %}?type=student" class="btn btn-warning">导入学生 CSV</a>
+            <a href="{% url 'management_app:management_user_csv_import' %}?type=teacher" class="btn btn-secondary">导入教师 CSV</a>
+            <a href="{% url 'management_app:management_attendance_overview' %}" class="btn btn-dark">考勤总览</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

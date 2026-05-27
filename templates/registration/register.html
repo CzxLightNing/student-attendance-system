@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}注册 - 学生考勤管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">用户注册</h3>
+
+                {% if errors %}
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        {% for error in errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'accounts:register' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_role" class="form-label">注册角色 <span class="text-danger">*</span></label>
+                        <select name="role" id="id_role" class="form-select" required onchange="toggleRoleFields()">
+                            <option value="student" {% if form_data.role == 'student' %}selected{% endif %}>学生</option>
+                            <option value="teacher" {% if form_data.role == 'teacher' %}selected{% endif %}>教师</option>
+                        </select>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="id_last_name" class="form-label">姓 <span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" id="id_last_name" class="form-control" placeholder="请输入姓" value="{{ form_data.last_name|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_first_name" class="form-label">名 <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" id="id_first_name" class="form-control" placeholder="请输入名" value="{{ form_data.first_name|default:'' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">用户名 <span class="text-danger">*</span></label>
+                        <input type="text" name="username" id="id_username" class="form-control" placeholder="请输入用户名（字母、数字、下划线）" value="{{ form_data.username|default:'' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">邮箱</label>
+                        <input type="email" name="email" id="id_email" class="form-control" placeholder="请输入邮箱地址" value="{{ form_data.email|default:'' }}">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="id_password" class="form-label">密码 <span class="text-danger">*</span></label>
+                            <input type="password" name="password" id="id_password" class="form-control" placeholder="至少 6 位" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_password_confirm" class="form-label">确认密码 <span class="text-danger">*</span></label>
+                            <input type="password" name="password_confirm" id="id_password_confirm" class="form-control" placeholder="请再次输入密码" required>
+                        </div>
+                    </div>
+
+                    <div id="student_fields" style="display: block;">
+                        <div class="mb-3">
+                            <label for="id_student_id" class="form-label">学号 <span class="text-danger">*</span>（学生必填）</label>
+                            <input type="text" name="student_id" id="id_student_id" class="form-control" placeholder="请输入学号" value="{{ form_data.student_id|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div id="teacher_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="id_teacher_id" class="form-label">工号 <span class="text-danger">*</span>（教师必填）</label>
+                            <input type="text" name="teacher_id" id="id_teacher_id" class="form-control" placeholder="请输入工号" value="{{ form_data.teacher_id|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">注册</button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p class="mb-0">已有账号？<a href="{% url 'accounts:login' %}">立即登录</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    /**
+     * 根据用户选择的角色切换显示学号/工号输入框
+     * 学生角色：显示学号字段，隐藏工号字段
+     * 教师角色：显示工号字段，隐藏学号字段
+     */
+    function toggleRoleFields() {
+        const roleSelect = document.getElementById('id_role');
+        const studentFields = document.getElementById('student_fields');
+        const teacherFields = document.getElementById('teacher_fields');
+
+        if (roleSelect.value === 'student') {
+            studentFields.style.display = 'block';
+            teacherFields.style.display = 'none';
+        } else {
+            studentFields.style.display = 'none';
+            teacherFields.style.display = 'block';
+        }
+    }
+
+    // 页面加载时根据默认角色设置初始显示状态
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleRoleFields();
+    });
+</script>
+{% endblock %}

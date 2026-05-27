@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}用户管理 - 管理面板{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>用户管理</h3>
+    <div>
+        <a href="{% url 'management_app:management_user_create' %}" class="btn btn-primary">添加用户</a>
+        <a href="{% url 'management_app:management_user_csv_import' %}?type=student" class="btn btn-info">导入学生 CSV</a>
+        <a href="{% url 'management_app:management_user_csv_import' %}?type=teacher" class="btn btn-secondary">导入教师 CSV</a>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="role" class="form-label">按角色筛选</label>
+                <select name="role" id="role" class="form-select">
+                    <option value="">全部</option>
+                    <option value="student" {% if role_filter == 'student' %}selected{% endif %}>学生</option>
+                    <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>教师</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>管理员</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="class_id" class="form-label">按班级筛选（仅学生）</label>
+                <select name="class_id" id="class_id" class="form-select">
+                    <option value="">全部</option>
+                    {% for c in all_classes %}
+                    <option value="{{ c.id }}" {% if class_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">筛选</button>
+                <a href="{% url 'management_app:management_user_list' %}" class="btn btn-outline-secondary">清除</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        {% if users %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-primary">
+                    <tr>
+                        <th>用户名</th>
+                        <th>姓名</th>
+                        <th>角色</th>
+                        <th>学号/工号</th>
+                        <th>班级</th>
+                        <th>状态</th>
+                        <th>注册时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.last_name }}{{ user.first_name }}</td>
+                        <td>
+                            {% if user.role == 'admin' %}
+                            <span class="badge bg-danger">管理员</span>
+                            {% elif user.role == 'teacher' %}
+                            <span class="badge bg-info">教师</span>
+                            {% else %}
+                            <span class="badge bg-success">学生</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.role == 'student' %}{{ user.student_id|default:'-' }}
+                            {% elif user.role == 'teacher' %}{{ user.teacher_id|default:'-' }}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>{{ user.student_class.name|default:'-' }}</td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">已激活</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">待审核</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.date_joined|date:"Y-m-d" }}</td>
+                        <td>
+                            <a href="{% url 'management_app:management_user_edit' user.id %}" class="btn btn-sm btn-outline-primary">编辑</a>
+                            {% if user.role != 'admin' %}
+                            <form method="post" action="{% url 'management_app:management_user_reset_password' user.id %}" style="display: inline;" onsubmit="return confirm('确定要重置「{{ user.username }}」的密码为 12345678 吗？');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-warning">重置密码</button>
+                            </form>
+                            {% endif %}
+                            {% if not user.is_active %}
+                            <form method="post" action="{% url 'management_app:management_user_activate' user.id %}" style="display: inline;" onsubmit="return confirm('确定要激活「{{ user.username }}」的账号吗？');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-success">激活</button>
+                            </form>
+                            {% endif %}
+                            {% if user.id != request.user.id %}
+                            <form method="post" action="{% url 'management_app:management_user_delete' user.id %}" style="display: inline;" onsubmit="return confirm('确定要删除用户「{{ user.username }}」吗？该操作不可撤销。');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+        <nav aria-label="用户列表分页">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&role={{ role_filter }}&class_id={{ class_filter }}">上一页</a>
+                </li>
+                {% endif %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&role={{ role_filter }}&class_id={{ class_filter }}">下一页</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <p class="text-muted text-center mb-0">暂无用户数据</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

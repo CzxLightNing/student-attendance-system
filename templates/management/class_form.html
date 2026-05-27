@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{% if form.instance.pk %}编辑班级{% else %}创建班级{% endif %} - 管理面板{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">{% if form.instance.pk %}编辑班级{% else %}创建班级{% endif %}</h3>
+
+<div class="card shadow">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_name" class="form-label">班级名称 <span class="text-danger">*</span></label>
+                <input type="text" name="name" id="id_name" class="form-control" placeholder="如：一年级一班" value="{{ form.name.value|default:'' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="id_grade" class="form-label">年级 <span class="text-danger">*</span></label>
+                <input type="text" name="grade" id="id_grade" class="form-control" placeholder="如：一年级" value="{{ form.grade.value|default:'' }}" required>
+            </div>
+            <div class="d-grid gap-2 d-md-flex">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{% url 'management_app:management_class_list' %}" class="btn btn-outline-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
