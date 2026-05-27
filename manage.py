@@ -6,6 +6,7 @@ import sys
 
 def main():
     """运行 Django 管理任务的主函数"""
+    """Main function to run Django management tasks"""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:
         from django.core.management import execute_from_command_line

@@ -18,6 +18,7 @@ class CustomUser(AbstractUser):
     - managed_classes：教师管理的班级（仅教师角色使用，ManyToMany）
     """
     # 角色选择常量
+    # Role choice constants
     ROLE_STUDENT = 'student'
     ROLE_TEACHER = 'teacher'
     ROLE_ADMIN = 'admin'
@@ -29,6 +30,7 @@ class CustomUser(AbstractUser):
     ]
 
     # 角色字段，默认为学生
+    # Role field, defaults to student
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
@@ -57,7 +59,9 @@ class CustomUser(AbstractUser):
     )
 
     # 学生所属班级（将在 attendance 应用中定义 Class 模型后关联）
+    # Student's class (linked to Class model in attendance app)
     # 使用字符串引用延迟绑定，避免循环导入
+    # Use string reference for lazy binding, avoid circular import
     student_class = models.ForeignKey(
         'attendance.Class',
         on_delete=models.SET_NULL,
@@ -69,6 +73,7 @@ class CustomUser(AbstractUser):
     )
 
     # 教师管理的班级（多对多关联）
+    # Classes managed by teacher (many-to-many)
     managed_classes = models.ManyToManyField(
         'attendance.Class',
         blank=True,
@@ -81,10 +86,12 @@ class CustomUser(AbstractUser):
         verbose_name_plural = '用户'
         ordering = ['-date_joined']
         # MySQL 兼容：显式指定表名
+        # MySQL compatibility: explicit table name
         db_table = 'accounts_customuser'
 
     def __str__(self):
         """返回用户的可读标识：姓名 + 角色"""
+        """Return user readable identifier: name + role"""
         full_name = f"{self.last_name}{self.first_name}"
         display_name = full_name if full_name.strip() else self.username
         role_display = dict(self.ROLE_CHOICES).get(self.role, self.role)

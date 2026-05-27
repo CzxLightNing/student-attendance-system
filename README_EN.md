@@ -25,6 +25,8 @@ A Django-based student attendance web system supporting user registration/login,
 | Password Hashing | argon2-cffi |
 | Security | django-axes |
 | Excel Export | openpyxl |
+| Prod Server | Waitress (multi-threaded WSGI) |
+| Static Files | WhiteNoise |
 | Time Sync | ntplib (ntp.aliyun.com) |
 
 ## Quick Start
@@ -54,6 +56,20 @@ python manage.py runserver
 
 Visit `http://127.0.0.1:8000/` in your browser.
 
+## Production Deployment
+
+This project includes **Waitress** production WSGI server + **WhiteNoise** static file serving:
+
+```bash
+# Collect static files
+python manage.py collectstatic --noinput
+
+# Start production server
+python server.py
+```
+
+Configure via `.env`: `WAITRESS_HOST`, `WAITRESS_PORT`, `WAITRESS_THREADS`, `WAITRESS_CHANNEL_TIMEOUT`.
+
 ## Test Accounts
 
 | Role | Username | Password |
@@ -67,6 +83,7 @@ Visit `http://127.0.0.1:8000/` in your browser.
 ```
 student-attendance-system/
 ├── manage.py
+├── server.py                # Prod server entry
 ├── requirements.txt
 ├── config/                  # Django project configuration
 ├── accounts/                # Account management app

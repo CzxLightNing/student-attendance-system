@@ -13,12 +13,14 @@ class Class(models.Model):
     存储学校班级的基本信息
     """
     # 班级名称（如"一年级一班"），全局唯一
+    # Class name (e.g. "Class 1-1"), globally unique
     name = models.CharField(
         max_length=100,
         unique=True,
         verbose_name='班级名称',
     )
     # 年级（如"一年级"）
+    # Grade (e.g. "Grade 1")
     grade = models.CharField(
         max_length=50,
         verbose_name='年级',
@@ -34,10 +36,12 @@ class Class(models.Model):
         verbose_name_plural = '班级'
         ordering = ['grade', 'name']
         # MySQL 兼容：显式指定表名
+        # MySQL compatibility: explicit table name
         db_table = 'class_group'
 
     def __str__(self):
         """返回班级的名称标识"""
+        """Return class name identifier"""
         return self.name
 
 
@@ -48,6 +52,7 @@ class AttendanceCode(models.Model):
     同一班级同一时间只能有一个有效签到码
     """
     # 所属班级
+    # Belonging class
     class_group = models.ForeignKey(
         Class,
         on_delete=models.CASCADE,
@@ -55,11 +60,13 @@ class AttendanceCode(models.Model):
         db_index=True,
     )
     # 4 位数字签到码
+    # 4-digit check-in code
     code = models.CharField(
         max_length=4,
         verbose_name='签到码',
     )
     # 创建签到码的教师
+    # Teacher who created the code
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -71,6 +78,7 @@ class AttendanceCode(models.Model):
         verbose_name='创建时间',
     )
     # 课程开始时间（用于迟到判定，可选）
+    # Course start time (for late determination, optional)
     course_start_time = models.DateTimeField(
         null=True,
         blank=True,
@@ -82,6 +90,7 @@ class AttendanceCode(models.Model):
         db_index=True,
     )
     # 是否有效（教师可手动失效）
+    # Is active (teacher can manually deactivate)
     is_active = models.BooleanField(
         default=True,
         verbose_name='是否有效',
@@ -93,8 +102,10 @@ class AttendanceCode(models.Model):
         verbose_name_plural = '签到码'
         ordering = ['-created_at']
         # MySQL 兼容：显式指定表名
+        # MySQL compatibility: explicit table name
         db_table = 'attendance_attendancecode'
         # 联合索引：加速按班级查询有效签到码
+        # Composite index: speed up active code query by class
         indexes = [
             models.Index(fields=['class_group', 'is_active'], name='idx_class_active'),
             models.Index(fields=['code', 'is_active'], name='idx_active_code'),
@@ -102,6 +113,7 @@ class AttendanceCode(models.Model):
 
     def __str__(self):
         """返回签到码的可读标识"""
+        """Return check-in code readable identifier"""
         return f"签到码 {self.code} - {self.class_group.name}"
 
 
@@ -112,6 +124,7 @@ class AttendanceRecord(models.Model):
     同一个学生对同一个签到码只能有一条记录
     """
     # 签到学生
+    # Signed students
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -119,6 +132,7 @@ class AttendanceRecord(models.Model):
         db_index=True,
     )
     # 对应的签到码
+    # Corresponding code
     attendance_code = models.ForeignKey(
         AttendanceCode,
         on_delete=models.CASCADE,
@@ -126,11 +140,13 @@ class AttendanceRecord(models.Model):
         db_index=True,
     )
     # 签到时间戳
+    # Check-in timestamp
     timestamp = models.DateTimeField(
         auto_now_add=True,
         verbose_name='签到时间',
     )
     # 签到状态：正常 / 迟到 / 缺勤
+    # Check-in status: Normal / Late / Absent
     STATUS_NORMAL = '正常'
     STATUS_LATE = '迟到'
     STATUS_ABSENT = '缺勤'
@@ -153,8 +169,10 @@ class AttendanceRecord(models.Model):
         verbose_name_plural = '签到记录'
         ordering = ['-timestamp']
         # MySQL 兼容：显式指定表名
+        # MySQL compatibility: explicit table name
         db_table = 'attendance_attendancerecord'
         # 联合唯一约束：一个学生对一个签到码只能签到一次
+        # Unique together: one student can only check in once per code
         constraints = [
             models.UniqueConstraint(
                 fields=['student', 'attendance_code'],
@@ -167,4 +185,5 @@ class AttendanceRecord(models.Model):
 
     def __str__(self):
         """返回签到记录的可读标识"""
+        """Return attendance record readable identifier"""
         return f"{self.student.last_name}{self.student.first_name} - {self.attendance_code.code} - {self.status}"

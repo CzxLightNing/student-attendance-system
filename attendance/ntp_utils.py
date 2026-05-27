@@ -10,6 +10,7 @@ import logging
 logger = logging.getLogger('audit')
 
 # NTP 服务器地址
+# NTP server address
 NTP_SERVER = 'ntp.aliyun.com'
 
 
@@ -23,6 +24,7 @@ def get_ntp_time():
         client = ntplib.NTPClient()
         response = client.request(NTP_SERVER, version=3, timeout=5)
         # NTP 时间戳转换为 datetime
+        # Convert NTP timestamp to datetime
         ntp_timestamp = response.tx_time
         utc_time = datetime.fromtimestamp(ntp_timestamp, tz=timezone.utc)
         return utc_time
@@ -40,4 +42,5 @@ def get_current_time():
     if ntp_time:
         return ntp_time
     # NTP 不可用时降级使用本地系统时间
+    # Fallback to local system time if NTP unavailable
     return datetime.now(tz=timezone.utc)

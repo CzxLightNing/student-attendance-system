@@ -1,5 +1,6 @@
 """
 种子数据管理命令
+Seed data management command
 通过 `python manage.py seed_data` 创建测试数据：
 - 管理员账号（admin / 12345678）
 - 教师账号（teacher1 / 12345678）
@@ -18,6 +19,7 @@ class Command(BaseCommand):
         self.stdout.write('开始创建种子数据...')
 
         # ==================== 创建班级 ====================
+        # ==================== Create Classes ====================
         self.stdout.write('创建班级...')
         class1, created1 = Class.objects.get_or_create(
             name='一年级一班',
@@ -38,6 +40,7 @@ class Command(BaseCommand):
             self.stdout.write(f'  班级已存在：{class2.name}')
 
         # ==================== 创建管理员账号 ====================
+        # ==================== Create Admin Account ====================
         self.stdout.write('创建管理员账号...')
         if not CustomUser.objects.filter(username='admin').exists():
             admin = CustomUser.objects.create_superuser(
@@ -56,6 +59,7 @@ class Command(BaseCommand):
             self.stdout.write('  管理员账号已存在')
 
         # ==================== 创建教师账号 ====================
+        # ==================== Create Teacher Accounts ====================
         self.stdout.write('创建教师账号...')
         if not CustomUser.objects.filter(username='teacher1').exists():
             teacher = CustomUser.objects.create_user(
@@ -74,6 +78,7 @@ class Command(BaseCommand):
             self.stdout.write('  教师账号已存在')
 
         # ==================== 创建学生账号 ====================
+        # ==================== Create Student Accounts ====================
         self.stdout.write('创建学生账号...')
 
         students_data = [
@@ -99,6 +104,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'  学生账号 {student_data["username"]} 已存在')
 
         # ==================== 输出汇总信息 ====================
+        # ==================== Print Summary ====================
         self.stdout.write(self.style.SUCCESS('\n种子数据创建完成！'))
         self.stdout.write('=' * 50)
         self.stdout.write('测试账号如下：')

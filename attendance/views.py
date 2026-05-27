@@ -1,7 +1,10 @@
 """
 签到考勤应用的视图定义
+Attendance app view definitions
 包含学生签到、签到历史、教师签到码管理、考勤详情、导出 Excel 等功能
+Includes student check-in, history, teacher code management, attendance details, Excel export, etc.
 所有视图优先使用 Django Class-Based Views 实现
+All views use Django Class-Based Views by preference
 """
 import json
 import random
@@ -23,25 +26,31 @@ from accounts.models import CustomUser
 from .models import Class, AttendanceCode, AttendanceRecord
 
 # 创建审计日志记录器
+# Create audit logger
 audit_logger = logging.getLogger('audit')
 
 
 # ==================== 学生签到视图 ====================
+# ==================== Student Check-in Views ====================
 
 class StudentHomeView(LoginRequiredMixin, StudentRequiredMixin, TemplateView):
     """
     学生主页视图
+    Student home view
     显示签到码输入框，学生可输入 4 位签到码进行签到
+    Display code input; student enters 4-digit code to check in
     """
     template_name = 'student/index.html'
 
     def get_context_data(self, **kwargs):
         """获取当前学生所在班级的有效签到码信息"""
+        """Get active code info for the current student's class"""
         context = super().get_context_data(**kwargs)
         student = self.request.user
 
         if student.student_class:
             # 查找该学生班级当前有效的签到码
+            # Find active code for this student's class
             active_code = AttendanceCode.objects.filter(
                 class_group=student.student_class,
                 is_active=True,
@@ -50,6 +59,7 @@ class StudentHomeView(LoginRequiredMixin, StudentRequiredMixin, TemplateView):
 
             if active_code:
                 # 检查该学生是否已经针对此签到码签到
+                # Check whether the student has already used this code
                 already_signed = AttendanceRecord.objects.filter(
                     student=student,
                     attendance_code=active_code
@@ -64,6 +74,7 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
     """
     学生签到 AJAX 接口（POST，返回 JSON）
     校验签到码 → 校验班级归属 → 防重复签到 → 记录签到
+    Validate code → verify class → check duplicates → record check-in
     """
 
     def post(self, request):
@@ -74,6 +85,7 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
         student = request.user
 
         # 检查学生是否已分配班级
+        # Check if student has been assigned to a class
         if not student.student_class:
             return JsonResponse({
                 'success': False,
@@ -82,6 +94,7 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
 
         try:
             # 解析请求体中的 JSON 数据
+            # Parse JSON data from request body
             data = json.loads(request.body)
             code_input = data.get('code', '').strip()
         except json.JSONDecodeError:
@@ -91,6 +104,7 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
             }, status=400)
 
         # 校验签到码是否为 4 位数字
+        # Validate code is a 4-digit number
         if not code_input or len(code_input) != 4 or not code_input.isdigit():
             return JsonResponse({
                 'success': False,
@@ -98,6 +112,7 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
             }, status=400)
 
         # 查找有效的签到码
+        # Find active check-in code
         active_code = AttendanceCode.objects.filter(
             class_group=student.student_class,
             code=code_input,
@@ -112,6 +127,7 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
             }, status=400)
 
         # 校验学生是否属于签到码对应的班级
+        # Verify student belongs to the code's class
         if student.student_class != active_code.class_group:
             return JsonResponse({
                 'success': False,
@@ -119,6 +135,7 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
             }, status=400)
 
         # 检查是否重复签到
+        # Check for duplicate sign-in
         if AttendanceRecord.objects.filter(student=student, attendance_code=active_code).exists():
             return JsonResponse({
                 'success': False,
@@ -126,14 +143,17 @@ class StudentCheckinView(LoginRequiredMixin, StudentRequiredMixin, View):
             }, status=400)
 
         # 判断签到状态：正常 或 迟到
+        # Determine check-in status: Normal or Late
         now = timezone.now()
         status = '正常'
         if active_code.course_start_time:
             # 如果设置了课程开始时间，签到时间晚于课程时间 则标记为迟到
+            # If course start time is set and check-in time is later, mark as late
             if now > active_code.course_start_time + timedelta(minutes=5):
                 status = '迟到'
 
         # 创建签到记录
+        # Create attendance record
         record = AttendanceRecord.objects.create(
             student=student,
             attendance_code=active_code,
@@ -163,11 +183,13 @@ class StudentHistoryView(LoginRequiredMixin, StudentRequiredMixin, ListView):
 
     def get_queryset(self):
         """筛选当前学生的签到记录，支持日期范围过滤"""
+        """Filter current student check-in records, support date range filter"""
         queryset = AttendanceRecord.objects.filter(
             student=self.request.user
         ).select_related('attendance_code__class_group').order_by('-timestamp')
 
         # 日期范围筛选
+        # Date range filtering
         date_from = self.request.GET.get('date_from', '')
         date_to = self.request.GET.get('date_to', '')
 
@@ -180,6 +202,7 @@ class StudentHistoryView(LoginRequiredMixin, StudentRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         """向模板传递筛选参数，用于表单回填"""
+        """Pass filter params to template for form backfill"""
         context = super().get_context_data(**kwargs)
         context['date_from'] = self.request.GET.get('date_from', '')
         context['date_to'] = self.request.GET.get('date_to', '')
@@ -187,17 +210,20 @@ class StudentHistoryView(LoginRequiredMixin, StudentRequiredMixin, ListView):
 
 
 # ==================== 教师管理视图 ====================
+# ==================== Teacher Management Views ====================
 
 class TeacherHomeView(LoginRequiredMixin, TeacherRequiredMixin, ListView):
     """
     教师主页视图
     列出当前教师管理的所有班级列表
+    List all classes managed by current teacher
     """
     template_name = 'teacher/index.html'
     context_object_name = 'classes'
 
     def get_queryset(self):
         """获取当前教师管理的班级，按年级和名称排序"""
+        """Get classes managed by current teacher, sorted by grade and name"""
         return self.request.user.managed_classes.all().order_by('grade', 'name')
 
 
@@ -218,10 +244,12 @@ class TeacherClassDetailView(LoginRequiredMixin, TeacherRequiredMixin, DetailVie
 
     def get_context_data(self, **kwargs):
         """向模板传递当前班级的有效签到码、签到统计等信息"""
+        """Pass active code, stats, and other info for current class to template"""
         context = super().get_context_data(**kwargs)
         class_group = self.object
 
         # 查找当前班级的有效签到码
+        # Find active code for current class
         active_code = AttendanceCode.objects.filter(
             class_group=class_group,
             is_active=True,
@@ -231,6 +259,7 @@ class TeacherClassDetailView(LoginRequiredMixin, TeacherRequiredMixin, DetailVie
         context['active_code'] = active_code
 
         # 获取已签到学生信息
+        # Get signed-in student info
         if active_code:
             signed_records = AttendanceRecord.objects.filter(
                 attendance_code=active_code
@@ -240,6 +269,7 @@ class TeacherClassDetailView(LoginRequiredMixin, TeacherRequiredMixin, DetailVie
             context['signed_count'] = len(signed_students)
 
             # 获取未签到学生列表
+            # Get unsigned student list
             all_students = list(CustomUser.objects.filter(
                 role='student',
                 student_class=class_group
@@ -250,6 +280,7 @@ class TeacherClassDetailView(LoginRequiredMixin, TeacherRequiredMixin, DetailVie
             context['total_students'] = len(all_students)
         else:
             # 获取该班级所有学生
+            # Get all students in this class
             all_students = CustomUser.objects.filter(
                 role='student',
                 student_class=class_group
@@ -273,6 +304,7 @@ class TeacherGenerateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
         class_group = get_object_or_404(Class, id=class_id)
 
         # 验证教师是否有权管理该班级
+        # Verify teacher has permission to manage this class
         if not teacher.managed_classes.filter(id=class_id).exists():
             return JsonResponse({
                 'success': False,
@@ -288,21 +320,25 @@ class TeacherGenerateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
             course_start = None
 
         # 限制有效时长范围：1 ~ 120 分钟
+        # Limit duration range: 1 ~ 120 minutes
         if duration < 1 or duration > 120:
             duration = 10
 
         # 生成新签到码前，失效该班级所有旧签到码
+        # Deactivate all old codes for this class before generating new one
         AttendanceCode.objects.filter(
             class_group=class_group,
             is_active=True
         ).update(is_active=False)
 
         # 生成 4 位随机数字签到码
+        # Generate 4-digit random check-in code
         code = str(random.randint(1000, 9999))
         now = timezone.now()
         expires_at = now + timedelta(minutes=duration)
 
         # 解析课程开始时间（如果提供了）
+        # Parse course start time (if provided)
         course_start_time = None
         if course_start:
             try:
@@ -313,6 +349,7 @@ class TeacherGenerateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
                 course_start_time = now
 
         # 创建签到码
+        # Create check-in code
         attendance_code = AttendanceCode.objects.create(
             class_group=class_group,
             code=code,
@@ -328,6 +365,7 @@ class TeacherGenerateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
             'success': True,
             'message': f'签到码生成成功：{code}',
             'data': {
+                'id': attendance_code.id,
                 'code': code,
                 'expires_at': expires_at.isoformat(),
                 'created_at': attendance_code.created_at.isoformat(),
@@ -340,6 +378,7 @@ class TeacherDeactivateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
     """
     失效签到码 AJAX 接口（POST）
     教师手动失效当前有效的签到码
+    Teacher manually deactivates current active code
     """
 
     def post(self, request, class_id):
@@ -348,6 +387,7 @@ class TeacherDeactivateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
         class_group = get_object_or_404(Class, id=class_id)
 
         # 验证教师权限
+        # Verify teacher permission
         if not teacher.managed_classes.filter(id=class_id).exists():
             return JsonResponse({
                 'success': False,
@@ -355,6 +395,7 @@ class TeacherDeactivateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
             }, status=403)
 
         # 失效该班级所有有效签到码
+        # Deactivate all active codes for this class
         updated_count = AttendanceCode.objects.filter(
             class_group=class_group,
             is_active=True
@@ -372,14 +413,18 @@ class TeacherCheckinStatusView(LoginRequiredMixin, TeacherRequiredMixin, View):
     """
     签到实时状态查询 AJAX 接口（GET，返回 JSON）
     返回该签到码下已签到学生列表和未签到学生列表
+    Return signed and unsigned student lists for this code
     供前端 setInterval 轮询使用
+    For use with frontend setInterval polling
     """
 
     def get(self, request, code_id):
         """查询指定签到码的实时签到状态"""
+        """Query real-time status of specified check-in code"""
         attendance_code = get_object_or_404(AttendanceCode, id=code_id)
 
         # 验证教师权限
+        # Verify teacher permission
         if not request.user.managed_classes.filter(id=attendance_code.class_group_id).exists():
             return JsonResponse({
                 'success': False,
@@ -387,6 +432,7 @@ class TeacherCheckinStatusView(LoginRequiredMixin, TeacherRequiredMixin, View):
             }, status=403)
 
         # 获取已签到学生
+        # Get signed-in students
         signed_records = AttendanceRecord.objects.filter(
             attendance_code=attendance_code
         ).select_related('student').order_by('-timestamp')
@@ -402,6 +448,7 @@ class TeacherCheckinStatusView(LoginRequiredMixin, TeacherRequiredMixin, View):
             })
 
         # 获取班级所有学生
+        # Get all students in class
         all_students = CustomUser.objects.filter(
             role='student',
             student_class=attendance_code.class_group
@@ -449,10 +496,12 @@ class TeacherAttendanceDetailView(LoginRequiredMixin, TeacherRequiredMixin, Deta
 
     def get_context_data(self, **kwargs):
         """获取该签到码下已签到和未签到学生的完整信息"""
+        """Get complete signed/unsigned student info for this code"""
         context = super().get_context_data(**kwargs)
         attendance_code = self.object
 
         # 获取签到记录
+        # Get check-in records
         records = AttendanceRecord.objects.filter(
             attendance_code=attendance_code
         ).select_related('student').order_by('-timestamp')
@@ -461,6 +510,7 @@ class TeacherAttendanceDetailView(LoginRequiredMixin, TeacherRequiredMixin, Deta
         context['signed_count'] = records.count()
 
         # 获取班级所有学生
+        # Get all students in class
         all_students = CustomUser.objects.filter(
             role='student',
             student_class=attendance_code.class_group
@@ -483,19 +533,23 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
 
     def get(self, request, code_id):
         """导出指定签到码的签到记录为 Excel 文件"""
+        """Export check-in records for specified code as Excel file"""
         attendance_code = get_object_or_404(AttendanceCode, id=code_id)
 
         # 验证教师权限
+        # Verify teacher permission
         if not request.user.managed_classes.filter(id=attendance_code.class_group_id).exists():
             messages.error(request, '您无权导出该班级的考勤数据')
             return redirect('attendance:teacher_home')
 
         # 获取签到记录
+        # Get check-in records
         records = AttendanceRecord.objects.filter(
             attendance_code=attendance_code
         ).select_related('student').order_by('-timestamp')
 
         # 获取未签到学生
+        # Get unsigned students
         all_students = CustomUser.objects.filter(
             role='student',
             student_class=attendance_code.class_group
@@ -504,11 +558,13 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
         unsigned_students = [s for s in all_students if s.id not in signed_student_ids]
 
         # 创建 Excel 工作簿
+        # Create Excel workbook
         wb = Workbook()
         ws = wb.active
         ws.title = '考勤记录'
 
         # 定义样式
+        # Define styles
         header_font = Font(name='微软雅黑', bold=True, size=12)
         header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
         header_font_white = Font(name='微软雅黑', bold=True, size=12, color='FFFFFF')
@@ -521,6 +577,7 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
         center_alignment = Alignment(horizontal='center', vertical='center')
 
         # 写入标题行
+        # Write title row
         ws.merge_cells('A1:F1')
         title_cell = ws['A1']
         title_cell.value = f'考勤签到记录 - {attendance_code.class_group.name}（签到码：{attendance_code.code}）'
@@ -528,11 +585,13 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
         title_cell.alignment = center_alignment
 
         # 写入基本信息
+        # Write basic info
         ws.merge_cells('A2:F2')
         ws['A2'].value = f'创建时间：{attendance_code.created_at.strftime("%Y-%m-%d %H:%M:%S")}    教师：{attendance_code.created_by.last_name}{attendance_code.created_by.first_name}'
         ws['A2'].font = Font(name='微软雅黑', size=10)
 
         # 写入表头
+        # Write headers
         headers = ['序号', '学号', '姓名', '签到时间', '签到状态', '备注']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=4, column=col, value=header)
@@ -542,6 +601,7 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
             cell.border = thin_border
 
         # 写入签到数据
+        # Write check-in data
         row = 5
         for index, record in enumerate(records, 1):
             student = record.student
@@ -556,6 +616,7 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
             row += 1
 
         # 写入缺勤学生
+        # Write absent students
         for student in unsigned_students:
             ws.cell(row=row, column=1, value=row - 4).alignment = center_alignment
             ws.cell(row=row, column=2, value=student.student_id or '-').alignment = center_alignment
@@ -568,12 +629,14 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
             row += 1
 
         # 写入统计信息
+        # Write statistics
         row += 1
         ws.cell(row=row, column=1, value=f'统计：应到 {all_students.count()} 人，实到 {records.count()} 人，缺勤 {len(unsigned_students)} 人')
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
         ws.cell(row=row, column=1).font = Font(name='微软雅黑', bold=True)
 
         # 设置列宽
+        # Set column widths
         ws.column_dimensions['A'].width = 8
         ws.column_dimensions['B'].width = 18
         ws.column_dimensions['C'].width = 15
@@ -582,9 +645,11 @@ class TeacherExportExcelView(LoginRequiredMixin, TeacherRequiredMixin, View):
         ws.column_dimensions['F'].width = 15
 
         # 生成文件名
+        # Generate filename
         filename = f"考勤_{attendance_code.class_group.name}_{attendance_code.code}_{attendance_code.created_at.strftime('%Y%m%d%H%M')}.xlsx"
 
         # 创建 HTTP 响应
+        # Create HTTP response
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
@@ -607,6 +672,7 @@ class TeacherAttendanceHistoryView(LoginRequiredMixin, TeacherRequiredMixin, Lis
 
     def get_queryset(self):
         """获取教师管理的指定班级的签到码列表"""
+        """Get check-in code list for specified class managed by teacher"""
         class_id = self.kwargs.get('class_id')
         return AttendanceCode.objects.filter(
             class_group_id=class_id,
