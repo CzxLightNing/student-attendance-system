@@ -4,6 +4,12 @@
 
 基于 Django 的学生考勤 Web 系统，支持用户注册与登录、教师生成签到码、学生输入签到码签到，并提供管理员、教师、学生三种角色各自的管理与查看功能。
 
+## 仓库地址
+
+- [Gitee](https://gitee.com/chen-zixia666/student-attendance-system)
+- [GitHub](https://github.com/CzxLightNing/student-attendance-system)
+  > ⚠️ GitHub 仓库为镜像仓库，可能无法及时同步最新推送，请以 Gitee 仓库为准。
+
 ## 功能特性
 
 - **多角色管理**：管理员（班级/用户管理、CSV 批量导入）、教师（签到码生成、实时监控、Excel 导出）、学生（签到、历史查看）
