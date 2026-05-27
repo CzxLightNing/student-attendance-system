@@ -1,5 +1,6 @@
 """
 Django ASGI 应用入口
+Django ASGI application entry point
 用于在生产环境中通过 ASGI 服务器（如 Daphne、Uvicorn）部署 Django 应用
 支持异步通信协议（WebSocket 等）
 """

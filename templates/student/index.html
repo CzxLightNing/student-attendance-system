@@ -65,12 +65,14 @@
         const code = codeInput.value.trim();
 
         // 前端校验：签到码必须为 4 位数字
+        // Frontend validation: code must be 4 digits
         if (!/^\d{4}$/.test(code)) {
             showResult('请输入 4 位数字签到码', 'danger');
             return;
         }
 
         // 禁用提交按钮，防止重复提交
+        // Disable submit button to prevent duplicate submission
         submitBtn.disabled = true;
         submitBtn.textContent = '签到中...';
 

@@ -84,6 +84,7 @@
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script>
         // 全局 CSRF Token 配置，供所有 AJAX 请求使用
+        // Global CSRF token config for all AJAX requests
         function getCSRFToken() {
             const cookieValue = document.cookie
                 .split('; ')
@@ -92,6 +93,7 @@
         }
 
         // 统一的 fetch 封装，自动附带 CSRF Token
+        // Unified fetch wrapper, auto-attaches CSRF token
         async function apiFetch(url, options = {}) {
             const defaultOptions = {
                 headers: {

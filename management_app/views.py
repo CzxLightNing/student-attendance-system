@@ -1,7 +1,10 @@
 """
 管理面板应用的视图定义
+Admin panel app view definitions
 包含班级管理、用户管理、CSV 批量导入、考勤总览等功能
+Includes class management, user management, CSV batch import, attendance overview
 管理员使用函数视图 + 部分 CBV 实现
+Admin uses function views with some CBV implementation
 """
 import csv
 import os
@@ -27,6 +30,7 @@ User = get_user_model()
 audit_logger = logging.getLogger('audit')
 
 # ==================== CSV 上传安全校验常量 ====================
+# ==================== CSV Upload Security Validation Constants ====================
 ALLOWED_EXTENSIONS = ['.csv']
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
@@ -34,7 +38,9 @@ MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 def validate_csv_upload(file):
     """
     CSV 文件上传安全校验函数
+    CSV file upload security validation function
     执行三重校验：文件扩展名 + MIME 类型 + 文件大小
+    Three checks: file extension + MIME type + file size
     """
     ext = os.path.splitext(file.name)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
@@ -46,9 +52,11 @@ def validate_csv_upload(file):
 
 
 # ==================== 管理面板首页 ====================
+# ==================== Admin Panel Home ====================
 
 class ManagementHomeView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
     """管理员主页：考勤总览统计"""
+    """Admin home: attendance overview statistics"""
     template_name = 'management/index.html'
 
     def get_context_data(self, **kwargs):
@@ -66,9 +74,11 @@ class ManagementHomeView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
 
 
 # ==================== 班级管理视图 ====================
+# ==================== Class Management Views ====================
 
 class ClassListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     """班级列表视图"""
+    """Class list view"""
     template_name = 'management/class_list.html'
     model = Class
     context_object_name = 'classes'
@@ -90,6 +100,7 @@ class ClassCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
 
 class ClassUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
     """编辑班级视图"""
+    """Edit class view"""
     template_name = 'management/class_form.html'
     model = Class
     fields = ['name', 'grade']
@@ -178,9 +189,11 @@ class ClassCSVImportView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 
 # ==================== 用户管理视图 ====================
+# ==================== User Management Views ====================
 
 class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     """用户列表视图，支持按角色和班级筛选"""
+    """User list view, supports filtering by role and class"""
     template_name = 'management/user_list.html'
     model = User
     context_object_name = 'users'
@@ -208,6 +221,7 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
 
 class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, View):
     """管理员手动创建用户（学生或教师）"""
+    """Admin manually creates user (student or teacher)"""
     template_name = 'management/user_form.html'
 
     def get(self, request):
@@ -272,6 +286,7 @@ class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 class UserEditView(LoginRequiredMixin, AdminRequiredMixin, View):
     """管理员编辑用户信息"""
+    """Admin edits user info"""
     template_name = 'management/user_form.html'
 
     def get(self, request, user_id):
@@ -305,6 +320,7 @@ class UserEditView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, View):
     """管理员删除用户"""
+    """Admin deletes user"""
     def post(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
         if user.id == request.user.id:
@@ -320,6 +336,7 @@ class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 class UserResetPasswordView(LoginRequiredMixin, AdminRequiredMixin, View):
     """管理员重置用户密码为初始密码 12345678"""
+    """Admin resets user password to default 12345678"""
     def post(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
         user.set_password('12345678')
@@ -333,6 +350,7 @@ class UserResetPasswordView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 class UserActivateView(LoginRequiredMixin, AdminRequiredMixin, View):
     """管理员审核/激活用户自行注册的账号"""
+    """Admin reviews/activates self-registered accounts"""
     def post(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
         user.is_active = True
@@ -463,6 +481,7 @@ class UserCSVImportView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 
 # ==================== CSV 模板下载 ====================
+# ==================== CSV Template Download ====================
 
 class CSVTemplateDownloadView(LoginRequiredMixin, AdminRequiredMixin, View):
     """CSV 模板文件下载视图"""
@@ -482,9 +501,11 @@ class CSVTemplateDownloadView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 
 # ==================== 考勤总览视图（管理员） ====================
+# ==================== Attendance Overview View (Admin) ====================
 
 class AdminAttendanceOverviewView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
     """管理员考勤总览：查看所有班级的签到统计"""
+    """Admin attendance overview: view stats for all classes"""
     template_name = 'management/attendance_overview.html'
 
     def get_context_data(self, **kwargs):
