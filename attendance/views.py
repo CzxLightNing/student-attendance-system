@@ -365,6 +365,7 @@ class TeacherGenerateCodeView(LoginRequiredMixin, TeacherRequiredMixin, View):
             'success': True,
             'message': f'签到码生成成功：{code}',
             'data': {
+                'id': attendance_code.id,
                 'code': code,
                 'expires_at': expires_at.isoformat(),
                 'created_at': attendance_code.created_at.isoformat(),

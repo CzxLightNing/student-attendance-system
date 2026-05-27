@@ -25,6 +25,8 @@
 | 密码哈希     | argon2-cffi                      |
 | 安全防护     | django-axes                      |
 | Excel 导出 | openpyxl                         |
+| 生产服务器   | Waitress（多线程 WSGI）             |
+| 静态文件服务  | WhiteNoise                        |
 | 时间同步     | ntplib（ntp.aliyun.com）           |
 
 ## 快速启动
@@ -52,6 +54,20 @@ python manage.py runserver
 
 浏览器访问 `http://127.0.0.1:8000/`
 
+## 生产环境部署
+
+项目内置 **Waitress** 生产级 WSGI 服务器 + **WhiteNoise** 静态文件服务：
+
+```bash
+# 收集静态文件
+python manage.py collectstatic --noinput
+
+# 启动生产服务器
+python server.py
+```
+
+可在 `.env` 中配置：`WAITRESS_HOST`、`WAITRESS_PORT`、`WAITRESS_THREADS`、`WAITRESS_CHANNEL_TIMEOUT`。
+
 ## 测试账号
 
 | 角色  | 用户名         | 密码         |
@@ -65,6 +81,7 @@ python manage.py runserver
 ```
 student-attendance-system/
 ├── manage.py
+├── server.py                  # 生产服务器入口
 ├── requirements.txt
 ├── config/                  # Django 项目配置
 ├── accounts/                # 账号管理应用

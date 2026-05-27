@@ -82,7 +82,7 @@ class AdminRequiredMixin(UserPassesTestMixin):
 
     def handle_no_permission(self):
         messages.error(self.request, '您没有访问此页面的权限')
-        return redirect('home')
+        return redirect('accounts:home')
 
 
 class TeacherRequiredMixin(UserPassesTestMixin):
@@ -97,7 +97,7 @@ class TeacherRequiredMixin(UserPassesTestMixin):
 
     def handle_no_permission(self):
         messages.error(self.request, '您没有访问此页面的权限')
-        return redirect('home')
+        return redirect('accounts:home')
 
 
 class StudentRequiredMixin(UserPassesTestMixin):
@@ -112,4 +112,4 @@ class StudentRequiredMixin(UserPassesTestMixin):
 
     def handle_no_permission(self):
         messages.error(self.request, '您没有访问此页面的权限')
-        return redirect('home')
+        return redirect('accounts:home')

@@ -11,11 +11,14 @@
 - **安全**: django-axes 登录防护、会话安全、CSRF 保护
 - **时间同步**: ntplib 从 NTP 服务器获取时间
 - **导出**: openpyxl 生成 Excel 考勤表单
+- **生产服务器**: Waitress 多线程 WSGI 服务器，支持并发请求处理
+- **静态文件服务**: WhiteNoise 中间件自动提供静态文件，无需额外配置
 
 ## 目录结构
 ```
 student-attendance-system/
 ├── manage.py                  # Django 管理入口
+├── server.py                  # 生产服务器入口（Waitress）
 ├── requirements.txt           # Python 依赖清单
 ├── .env.example               # 环境变量配置模板
 ├── .gitignore                 # Git 忽略规则
@@ -81,6 +84,32 @@ python manage.py runserver
 #   教师：  teacher1 / 12345678
 #   学生：  student1 / 12345678
 ```
+
+## 生产环境部署
+
+本项目使用 **Waitress** 作为生产级 WSGI 服务器，支持多线程并发处理请求。
+
+```bash
+# 安装依赖（已包含 waitress 和 whitenoise）
+pip install -r requirements.txt
+
+# 收集静态文件到 staticfiles/ 目录（首次部署或静态文件变更后执行）
+python manage.py collectstatic --noinput
+
+# 启动生产服务器（默认监听 0.0.0.0:8000，8 个线程）
+python server.py
+```
+
+可通过 `.env` 文件调整 Waitress 参数：
+
+```
+WAITRESS_HOST=0.0.0.0        # 绑定地址
+WAITRESS_PORT=8000           # 监听端口
+WAITRESS_THREADS=8           # 工作线程数
+WAITRESS_CHANNEL_TIMEOUT=120 # 通道超时（秒）
+```
+
+> ⚠️ 生产环境部署时请确保 `DJANGO_ENV=production`、`DEBUG=False`，并妥善配置 `SECRET_KEY` 和 `ALLOWED_HOSTS`。
 
 ## 代码规范
 
