@@ -4,6 +4,12 @@ English | [中文](README.md)
 
 A Django-based student attendance web system supporting user registration/login, teacher-generated attendance codes, student code-based check-in, and role-specific management dashboards for administrators, teachers, and students.
 
+## Repository
+
+- [Gitee](https://gitee.com/chen-zixia666/student-attendance-system)
+- [GitHub](https://github.com/CzxLightNing/student-attendance-system)
+  > ⚠️ The GitHub repository is a mirror and may not reflect the latest updates. Please refer to the Gitee repository as the primary source.
+
 ## Features
 
 - **Multi-role Management**: Admin (class/user management, CSV batch import), Teacher (attendance code generation, real-time monitoring, Excel export), Student (check-in, history)
