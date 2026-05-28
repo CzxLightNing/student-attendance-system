@@ -6,9 +6,10 @@
     <title>{% block title %}学生考勤管理系统{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{% url 'accounts:home' %}">学生考勤系统</a>
@@ -36,34 +37,39 @@
                         {% endif %}
                     {% endif %}
                 </ul>
-                <ul class="navbar-nav ms-auto">
-                    {% if user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            {{ user.last_name }}{{ user.first_name }} ({% if user.role == 'admin' %}管理员{% elif user.role == 'teacher' %}教师{% else %}学生{% endif %})
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            {% if user.role != 'admin' %}
-                            <li><a class="dropdown-item" href="{% url 'accounts:change_password' %}">修改密码</a></li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">退出登录</a></li>
-                        </ul>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'accounts:login' %}">登录</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'accounts:register' %}">注册</a>
-                    </li>
-                    {% endif %}
-                </ul>
+            </div>
+            <div class="navbar-auth" id="navbarAuth">
+                <button class="navbar-auth-toggler" type="button" aria-label="用户菜单" aria-expanded="false" aria-controls="navbarAuthCollapse">
+                    <span class="navbar-auth-toggler-bar"></span>
+                    <span class="navbar-auth-toggler-bar"></span>
+                    <span class="navbar-auth-toggler-bar"></span>
+                </button>
+                <div class="navbar-auth-collapse" id="navbarAuthCollapse">
+                    <ul class="navbar-nav">
+                        {% if user.is_authenticated %}
+                        {% if user.role != 'admin' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:change_password' %}">修改密码</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:logout' %}">退出登录</a>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">登录</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:register' %}">注册</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
 
-    <main class="container mt-4">
+    <main class="container mt-4 flex-grow-1">
         {% if messages %}
             {% for message in messages %}
             <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
@@ -75,7 +81,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-light text-center text-muted py-3 mt-5">
+    <footer class="bg-light text-center text-muted py-3">
         <div class="container">
             <small>&copy; {% now "Y" %} 学生考勤管理系统 | 版本 1.0</small>
         </div>
@@ -116,6 +122,57 @@
             }
             return response.json();
         }
+    </script>
+    <script>
+        // 认证汉堡菜单交互逻辑
+        // Auth hamburger menu toggle logic
+        document.addEventListener('DOMContentLoaded', function () {
+            var authToggler = document.querySelector('.navbar-auth-toggler');
+            var authContainer = document.getElementById('navbarAuth');
+            if (!authToggler || !authContainer) return;
+
+            function openMenu() {
+                authContainer.classList.add('open');
+                authToggler.setAttribute('aria-expanded', 'true');
+            }
+
+            function closeMenu() {
+                authContainer.classList.remove('open');
+                authToggler.setAttribute('aria-expanded', 'false');
+            }
+
+            function isOpen() {
+                return authContainer.classList.contains('open');
+            }
+
+            authToggler.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (isOpen()) {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            });
+
+            document.addEventListener('click', function (e) {
+                if (isOpen() && !authContainer.contains(e.target)) {
+                    closeMenu();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && isOpen()) {
+                    closeMenu();
+                }
+            });
+
+            var menuLinks = authContainer.querySelectorAll('.navbar-auth-collapse .nav-link');
+            menuLinks.forEach(function (link) {
+                link.addEventListener('click', function () {
+                    closeMenu();
+                });
+            });
+        });
     </script>
     {% block extra_js %}{% endblock %}
 </body>
