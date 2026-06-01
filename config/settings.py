@@ -51,6 +51,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    # 禁止浏览器缓存认证页面，防止登出后前进/后退回显
+    # Prevent browser cache for authenticated pages
+    'config.middleware.NoCacheMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -229,6 +232,27 @@ if ENVIRONMENT == 'production':
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+# ==================== 开发环境安全配置 ====================
+# ==================== Development Security Config ====================
+else:
+    # 开发模式下的 CSRF 可信来源
+    # CSRF trusted origins for development
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'http://localhost',
+        'http://127.0.0.1',
+    ]
+    # Cookie 通过 HTTP 传输（开发环境不使用 HTTPS）
+    # Cookies sent over HTTP in development
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_HTTPONLY = True
+    # SameSite 策略：开发环境使用 Lax 确保兼容性
+    # SameSite policy: Lax for compatibility in development
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
 # 安全 HTTP 响应头配置
 # Security HTTP response headers config
