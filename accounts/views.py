@@ -46,7 +46,7 @@ class LoginView(DjangoLoginView):
         user = form.get_user()
         ip = self.request.META.get('REMOTE_ADDR', 'unknown')
         audit_logger.info(f'登录成功 - 用户名:{user.username} 角色:{user.role} IP:{ip}')
-        messages.success(self.request, f'欢迎回来，{user.last_name}{user.first_name}！')
+        messages.success(self.request, f'欢迎回来，{user.last_name}{user.first_name}！', extra_tags='welcome')
         return super().form_valid(form)
 
     def form_invalid(self, form):

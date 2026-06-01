@@ -1,11 +1,24 @@
 /* 用连续 clamp() 彻底覆盖 Bootstrap 断点跳变 */
 /* 540→720→960→1140→1320 全改为 95vw 等比缩放 + 上下限 */
 .container,
-.navbar .container,
 footer .container {
     width: 100%;
     max-width: clamp(540px, 95vw, 1320px);
     transition: max-width 0.3s ease-in-out, padding 0.3s ease-in-out;
+}
+
+/* 导航栏容器：取消滑动过渡，保持固定间距随浏览器自然拉伸 */
+.navbar .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 22px;
+    padding-right: 22px;
+    transition: none;
+}
+
+/* 品牌文字：固定左侧间距，取消过渡动画 */
+.navbar-brand {
+    transition: none;
 }
 
 /* 栅格系统过渡 */
@@ -55,152 +68,522 @@ footer .container {
     .navbar-collapse.collapse {
         opacity: 0;
     }
+
+    .navbar-collapse .nav-link {
+        text-align: center;
+    }
 }
 
-/* 右上角认证组件：汉堡菜单交互 */
-/* 桌面端 inline 显示，移动端通过汉堡按钮唤出下拉菜单 */
+/* 右上角认证组件：响应式滑入滑出 */
+/* 移出 collapse 容器，独立于 Bootstrap JS，用 CSS transform+opacity 实现平滑滑动 */
+/* 认证组件在 >1200px 保持显示，1200px~992px 之间隐藏，汉堡菜单在 ≤992px 才出现 */
 .navbar-auth {
-    position: relative;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 56px;
+    padding-right: 16px;
+    display: flex;
+    align-items: center;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1030;
 }
 
-/* 汉堡按钮：仅在移动端显示 */
-.navbar-auth-toggler {
-    display: none;
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer;
-    outline: none;
-    flex-shrink: 0;
+.navbar-auth .navbar-nav {
+    flex-direction: row;
 }
 
-.navbar-auth-toggler:focus {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
-}
-
-.navbar-auth-toggler-bar {
-    display: block;
-    width: 22px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.85);
-    margin: 4px 0;
-    border-radius: 1px;
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-}
-
-/* 汉堡打开时图标变形为 X */
-.navbar-auth.open .navbar-auth-toggler-bar:nth-child(1) {
-    transform: translateY(6px) rotate(45deg);
-}
-
-.navbar-auth.open .navbar-auth-toggler-bar:nth-child(2) {
-    opacity: 0;
-}
-
-.navbar-auth.open .navbar-auth-toggler-bar:nth-child(3) {
-    transform: translateY(-6px) rotate(-45deg);
-}
-
-/* 下拉菜单容器 */
-.navbar-auth-collapse {
-    overflow: hidden;
-}
-
-.navbar-auth-collapse .navbar-nav {
-    flex-direction: column;
-    padding: 4px 0;
-}
-
-.navbar-auth-collapse .nav-link {
-    white-space: nowrap;
-    padding: 8px 16px;
-    transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
-}
-
-.navbar-auth-collapse .nav-link:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 4px;
-}
-
-/* 桌面端：inline 显示，隐藏汉堡 */
-@media (min-width: 992px) {
-    .navbar-auth-toggler {
-        display: none;
-    }
-
-    .navbar-auth-collapse {
-        overflow: visible;
-    }
-
-    .navbar-auth-collapse .navbar-nav {
-        flex-direction: row;
-        padding: 0;
-    }
-
-    .navbar-auth-collapse .nav-link:hover {
-        background: none;
-    }
-}
-
-/* 移动端：汉堡菜单交互 */
-@media (max-width: 991.98px) {
+/* 992px~1200px：认证组件滑出，汉堡菜单延迟渐入 */
+@media (max-width: 1199.98px) and (min-width: 992px) {
     .navbar-auth {
-        display: flex;
-        align-items: center;
-        align-self: stretch;
-    }
-
-    .navbar-auth-toggler {
-        display: block;
-    }
-
-    .navbar-auth-collapse {
-        position: absolute;
-        top: calc(100% + 6px);
-        right: 0;
-        min-width: 160px;
-        background: #0d6efd;
-        border-radius: 6px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        max-height: 0;
+        transform: translateX(150%);
         opacity: 0;
         visibility: hidden;
-        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                    visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1030;
+        pointer-events: none;
     }
-
-    .navbar-auth.open .navbar-auth-collapse {
-        max-height: 200px;
+    .navbar.navbar-expand-lg .navbar-toggler {
+        display: block !important;
+        opacity: 0;
+        visibility: hidden;
+        position: absolute;
+        right: calc(1rem + 10px);
+        top: 0.5rem;
+        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    visibility 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition-delay: 0.45s; /* 等待认证组件滑出动画完成 */
+    }
+    .navbar.navbar-expand-lg .navbar-toggler.responsive-visible {
         opacity: 1;
         visibility: visible;
     }
+}
 
-    .navbar-auth-collapse .nav-link {
-        color: rgba(255, 255, 255, 0.95);
-        display: block;
-        width: 100%;
+@media (max-width: 991.98px) {
+    .navbar-auth {
+        width: 200px;
+        height: 100vh;
+        align-items: center;
+    }
+    .navbar-auth.mobile-hidden {
+        transform: translateX(150%);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+    .navbar.navbar-expand-lg .navbar-toggler {
+        opacity: 0;
+        visibility: hidden;
+        position: absolute;
+        right: calc(1rem + 10px);
+        top: 0.5rem;
+        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    visibility 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition-delay: 0.45s; /* 等待认证组件滑出动画完成 */
+    }
+    .navbar.navbar-expand-lg .navbar-toggler.responsive-visible {
+        opacity: 1;
+        visibility: visible;
     }
 }
 
 /* 认证卡片列：随浏览器宽度连续平滑缩放 */
-/* min=320px 保证最小可用宽度，45vw 按视口比例缩放，max=640px 保上限 */
+/* min=300px 保证最小可用宽度，45vw 按视口比例缩放，max=440px 上限 */
+/* 使用单一 clamp 消除 1400px 断点处"先变大再变小"的视觉跳变 */
 .auth-card-col {
-    width: clamp(320px, 45vw, 640px);
-    margin: 0 auto;
+    width: clamp(300px, 45vw, 440px);
+    max-width: 440px;
+    margin: 60px auto 0;
     padding: 0 12px;
     transition: width 0.3s ease-in-out;
 }
 
-/* 超大屏幕适配 */
-@media (min-width: 1400px) {
-    .navbar .container {
-        max-width: 100%;
-    }
+/* 移动端下拉选项框：精致卡片风格，纯阴影悬浮感，与汉堡菜单对齐 */
+/* 独立于导航栏风格，通过 max-height 实现从无到有的下滑动画效果 */
+/* 无边框设计、柔和阴影，与整体 Bootstrap 卡片设计语言协调一致 */
+.mobile-auth-dropdown {
+    position: absolute;
+    right: calc(1rem + 38px);
+    top: 58px;
+    width: max-content;
+    min-width: 56px;
+    overflow: visible;
+    transform: translateX(50%);
+    background: #fff;
+    border: none;
+    border-top: 3px solid #0d6efd;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10),
+                0 2px 6px rgba(0, 0, 0, 0.06);
+    z-index: 1040;
+    max-height: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.25s ease;
+}
 
-    .auth-card-col {
-        width: clamp(300px, 30vw, 440px);
+.mobile-auth-dropdown.show {
+    max-height: 200px;
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-auth-dropdown .dropdown-link {
+    display: block;
+    padding: 11px 10px;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    transition: background 0.2s ease,
+                color 0.2s ease;
+}
+
+.mobile-auth-dropdown .dropdown-link:hover {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.06);
+}
+
+.mobile-auth-dropdown .dropdown-link + .dropdown-link {
+    border-top: 1px solid #f0f0f0;
+}
+
+.mobile-auth-dropdown .dropdown-divider {
+    margin: 0;
+    border-top: 1px solid #e9ecef;
+}
+
+/* ========== 桌面端用户下拉菜单（≥1200px） ========== */
+/* 独立于 Bootstrap Dropdown JS，纯 CSS 动画 + 原生 JS 控制 */
+
+/* 菜单包裹容器：为下拉面板提供定位参考 */
+.user-menu-wrapper {
+    position: relative;
+}
+
+/* 触发按钮：移除 Bootstrap dropdown-toggle 默认样式 */
+.user-menu-trigger {
+    cursor: pointer;
+    user-select: none;
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 下拉箭头：CSS 三角形，展开时旋转 180° */
+.user-menu-arrow {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid rgba(255, 255, 255, 0.75);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-menu-trigger.active .user-menu-arrow {
+    transform: rotate(180deg);
+}
+
+/* 下拉面板：卡片风格，从触发按钮下方滑出 */
+.user-dropdown-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    min-width: 240px;
+    background: #fff;
+    border-radius: 12px;
+    border-top: 3px solid #0d6efd;
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.04);
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.96);
+    transition:
+        opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+/* 面板展开状态 */
+.user-dropdown-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+/* 下拉面板顶部小三角指示器 */
+.user-dropdown-panel::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    right: 24px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-left: 1px solid rgba(0, 0, 0, 0.06);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    transform: rotate(45deg);
+}
+
+/* 信息头部：显示用户名和角色徽章 */
+.user-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+}
+
+.user-dropdown-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    letter-spacing: 0.01em;
+}
+
+.user-dropdown-role-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.08);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+}
+
+/* 分割线 */
+.user-dropdown-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #e9ecef 10%, #e9ecef 90%, transparent);
+    margin: 0;
+}
+
+/* 菜单项 */
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        padding-left 0.2s ease;
+}
+
+.user-dropdown-item:hover {
+    background: rgba(13, 110, 253, 0.05);
+    color: #0d6efd;
+    padding-left: 24px;
+}
+
+.user-dropdown-item:first-of-type {
+    margin-top: 4px;
+}
+
+.user-dropdown-item:last-child {
+    margin-bottom: 4px;
+}
+
+/* 图标容器 */
+.user-dropdown-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: #6c757d;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.user-dropdown-item:hover .user-dropdown-item-icon {
+    color: #0d6efd;
+}
+
+/* 退出登录危险操作项 */
+.user-dropdown-item-danger {
+    color: #dc3545;
+}
+
+.user-dropdown-item-danger:hover {
+    background: rgba(220, 53, 69, 0.06);
+    color: #dc3545;
+}
+
+.user-dropdown-item-danger .user-dropdown-item-icon {
+    color: #dc3545;
+}
+
+.user-dropdown-item-danger:hover .user-dropdown-item-icon {
+    color: #dc3545;
+}
+
+
+
+/* ========== Toast 弹窗通知系统 ========== */
+/* 固定在页面顶部中央，不与主内容重叠 */
+
+.toast-container {
+    position: fixed;
+    top: 63px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    max-width: calc(100vw - 32px);
+}
+
+/* 单条 Toast 卡片 */
+.toast-item {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 520px;
+    padding: 4px 16px 4px 18px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(0, 0, 0, 0.06);
+    border-left: 4px solid #6c757d;
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    transition:
+        opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 入场动画 */
+@keyframes toastSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-24px) scale(0.92);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 退场动画 */
+.toast-item.toast-exit {
+    animation: toastSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
+}
+
+@keyframes toastSlideOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.9);
+    }
+}
+
+/* Toast 类型样式 */
+
+/* 欢迎 */
+.toast-item.toast-welcome {
+    border-left-color: #0d6efd;
+}
+.toast-item.toast-welcome .toast-icon {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.08);
+}
+
+/* 成功 */
+.toast-item.toast-success {
+    border-left-color: #198754;
+}
+.toast-item.toast-success .toast-icon {
+    color: #198754;
+    background: rgba(25, 135, 84, 0.08);
+}
+
+/* 错误 */
+.toast-item.toast-error {
+    border-left-color: #dc3545;
+}
+.toast-item.toast-error .toast-icon {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.08);
+}
+
+/* 警告 */
+.toast-item.toast-warning {
+    border-left-color: #ffc107;
+}
+.toast-item.toast-warning .toast-icon {
+    color: #e6a800;
+    background: rgba(255, 193, 7, 0.08);
+}
+
+/* 信息 */
+.toast-item.toast-info {
+    border-left-color: #0dcaf0;
+}
+.toast-item.toast-info .toast-icon {
+    color: #0dcaf0;
+    background: rgba(13, 202, 240, 0.08);
+}
+
+/* 图标容器 */
+.toast-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+/* Toast 正文 */
+.toast-body {
+    flex: 1;
+    font-size: 0.925rem;
+    font-weight: 500;
+    color: #2c3e50;
+    line-height: 1.45;
+    min-width: 0;
+    word-break: break-word;
+}
+
+/* 关闭按钮 */
+.toast-close {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: #adb5bd;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        color 0.2s ease,
+        background 0.2s ease;
+    padding: 0;
+    margin-left: 4px;
+}
+
+.toast-close:hover {
+    color: #495057;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.toast-close:active {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式适配 */
+@media (max-width: 767.98px) {
+    .toast-container {
+        left: 16px;
+        right: 16px;
+        transform: none;
+        max-width: none;
+    }
+    .toast-item {
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        padding: 2px 14px 2px 16px;
+    }
+    .toast-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+    }
+    .toast-body {
+        font-size: 0.875rem;
     }
 }

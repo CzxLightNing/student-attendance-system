@@ -10,74 +10,82 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
+    <!-- Toast 弹窗通知容器：固定在页面顶部中央 -->
+    <div class="toast-container" id="toastContainer">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="toast-item toast-{% if 'welcome' in message.tags %}welcome{% elif 'error' in message.level_tag %}error{% elif 'success' in message.level_tag %}success{% elif 'warning' in message.level_tag %}warning{% else %}info{% endif %}" role="alert" data-toast-id="{{ forloop.counter0 }}">
+                <div class="toast-icon">
+                    {% if 'welcome' in message.tags %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v.01"/><path d="M11 15v.01"/><path d="M15 11v.01"/><path d="M18.5 3.5A9 9 0 0 1 21 12a9 9 0 1 1-9-9c1.63 0 3.17.44 4.5 1.21"/></svg>
+                    {% elif 'error' in message.level_tag %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    {% elif 'warning' in message.level_tag %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    {% else %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    {% endif %}
+                </div>
+                <div class="toast-body">{{ message }}</div>
+                <button class="toast-close" aria-label="关闭">&times;</button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{% url 'accounts:home' %}">学生考勤系统</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
+            <button class="navbar-toggler" type="button"
+                    aria-controls="mobileAuthDropdown" aria-expanded="false" aria-label="切换导航菜单">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+            <!-- 移动端下拉选项框：与汉堡菜单对齐的紧凑下拉面板 -->
+            <div class="mobile-auth-dropdown" id="mobileAuthDropdown">
+                {% if user.is_authenticated %}
+                {% with link_class='dropdown-link' show_icons=False divider='yes' %}
+                {% include 'includes/role_links.html' %}
+                {% endwith %}
+                {% else %}
+                <a class="dropdown-link" href="{% url 'accounts:login' %}">登录</a>
+                <a class="dropdown-link" href="{% url 'accounts:register' %}">注册</a>
+                {% endif %}
+            </div>
+
+            <div class="navbar-auth">
+                <ul class="navbar-nav">
                     {% if user.is_authenticated %}
-                        {% if user.role == 'admin' %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'management_app:management_home' %}">管理面板</a>
-                        </li>
-                        {% elif user.role == 'teacher' %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'attendance:teacher_home' %}">我的班级</a>
-                        </li>
-                        {% elif user.role == 'student' %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'attendance:student_home' %}">签到</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'attendance:student_history' %}">签到历史</a>
-                        </li>
-                        {% endif %}
+                    <li class="nav-item user-menu-wrapper">
+                        <a class="nav-link user-menu-trigger" href="#" id="userMenuTrigger" role="button" aria-expanded="false" aria-haspopup="true">
+                            {{ user.last_name }}{{ user.first_name }} ({% if user.role == 'admin' %}管理员{% elif user.role == 'teacher' %}教师{% else %}学生{% endif %})
+                            <span class="user-menu-arrow"></span>
+                        </a>
+                        <div class="user-dropdown-panel" id="userDropdownPanel">
+                            <div class="user-dropdown-header">
+                                <div class="user-dropdown-name">{{ user.last_name }}{{ user.first_name }}</div>
+                                <div class="user-dropdown-role-badge">
+                                    {% if user.role == 'admin' %}管理员{% elif user.role == 'teacher' %}教师{% else %}学生{% endif %}
+                                </div>
+                            </div>
+                            <div class="user-dropdown-divider"></div>
+                            {% with link_class='user-dropdown-item' show_icons=True divider='yes' %}
+                            {% include 'includes/role_links.html' %}
+                            {% endwith %}
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">登录</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:register' %}">注册</a>
+                    </li>
                     {% endif %}
                 </ul>
-            </div>
-            <div class="navbar-auth" id="navbarAuth">
-                <button class="navbar-auth-toggler" type="button" aria-label="用户菜单" aria-expanded="false" aria-controls="navbarAuthCollapse">
-                    <span class="navbar-auth-toggler-bar"></span>
-                    <span class="navbar-auth-toggler-bar"></span>
-                    <span class="navbar-auth-toggler-bar"></span>
-                </button>
-                <div class="navbar-auth-collapse" id="navbarAuthCollapse">
-                    <ul class="navbar-nav">
-                        {% if user.is_authenticated %}
-                        {% if user.role != 'admin' %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:change_password' %}">修改密码</a>
-                        </li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:logout' %}">退出登录</a>
-                        </li>
-                        {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:login' %}">登录</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:register' %}">注册</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
             </div>
         </div>
     </nav>
 
     <main class="container mt-4 flex-grow-1">
-        {% if messages %}
-            {% for message in messages %}
-            <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
-            </div>
-            {% endfor %}
-        {% endif %}
         {% block content %}{% endblock %}
     </main>
 
@@ -122,56 +130,154 @@
             }
             return response.json();
         }
-    </script>
-    <script>
-        // 认证汉堡菜单交互逻辑
-        // Auth hamburger menu toggle logic
+
+        // 响应式导航栏控制：汉堡菜单和登录按钮显示/隐藏
+        // 逻辑：认证组件在 >1200px 显示、992px~1200px 隐藏；汉堡菜单在 ≤992px 才出现
+        function handleNavbarResponsive() {
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            const navbarAuth = document.querySelector('.navbar-auth');
+            const screenWidth = window.innerWidth;
+            const isLargeScreen = screenWidth >= 1200;
+            const isMediumScreen = screenWidth >= 992 && screenWidth < 1200;
+
+            if (navbarToggler) {
+                navbarToggler.classList.toggle('responsive-visible', !isLargeScreen);
+            }
+            if (navbarAuth) {
+                navbarAuth.classList.toggle('mobile-hidden', !isLargeScreen);
+            }
+        }
+        window.addEventListener('load', handleNavbarResponsive);
+        window.addEventListener('resize', handleNavbarResponsive);
+
+        // 移动端下拉选项框：点击汉堡菜单触发下滑显示/隐藏
         document.addEventListener('DOMContentLoaded', function () {
-            var authToggler = document.querySelector('.navbar-auth-toggler');
-            var authContainer = document.getElementById('navbarAuth');
-            if (!authToggler || !authContainer) return;
+            const toggler = document.querySelector('.navbar-toggler');
+            const dropdown = document.getElementById('mobileAuthDropdown');
+            if (!toggler || !dropdown) return;
 
-            function openMenu() {
-                authContainer.classList.add('open');
-                authToggler.setAttribute('aria-expanded', 'true');
-            }
-
-            function closeMenu() {
-                authContainer.classList.remove('open');
-                authToggler.setAttribute('aria-expanded', 'false');
-            }
-
-            function isOpen() {
-                return authContainer.classList.contains('open');
-            }
-
-            authToggler.addEventListener('click', function (e) {
+            toggler.addEventListener('click', function (e) {
+                if (window.innerWidth >= 1200) return;
                 e.stopPropagation();
-                if (isOpen()) {
-                    closeMenu();
-                } else {
-                    openMenu();
-                }
+                dropdown.classList.toggle('show');
             });
 
+            // 点击选项框外部时关闭
             document.addEventListener('click', function (e) {
-                if (isOpen() && !authContainer.contains(e.target)) {
-                    closeMenu();
+                if (!dropdown.classList.contains('show')) return;
+                if (!dropdown.contains(e.target) && e.target !== toggler && !toggler.contains(e.target)) {
+                    dropdown.classList.remove('show');
                 }
             });
 
+            // 窗口调整到桌面尺寸时自动关闭
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 1200) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        });
+
+        // 桌面端用户下拉菜单：独立于 Bootstrap Dropdown，原生 JS 控制
+        document.addEventListener('DOMContentLoaded', function () {
+            const trigger = document.getElementById('userMenuTrigger');
+            const panel = document.getElementById('userDropdownPanel');
+            if (!trigger || !panel) return;
+
+            function openPanel() {
+                panel.classList.add('show');
+                trigger.classList.add('active');
+                trigger.setAttribute('aria-expanded', 'true');
+            }
+
+            function closePanel() {
+                panel.classList.remove('show');
+                trigger.classList.remove('active');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+
+            trigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (panel.classList.contains('show')) {
+                    closePanel();
+                } else {
+                    openPanel();
+                }
+            });
+
+            // 点击面板外部时关闭
+            document.addEventListener('click', function (e) {
+                if (!panel.classList.contains('show')) return;
+                if (!panel.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
+                    closePanel();
+                }
+            });
+
+            // 按下 Escape 键关闭
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && isOpen()) {
-                    closeMenu();
+                if (e.key === 'Escape' && panel.classList.contains('show')) {
+                    closePanel();
+                    trigger.focus();
                 }
             });
 
-            var menuLinks = authContainer.querySelectorAll('.navbar-auth-collapse .nav-link');
-            menuLinks.forEach(function (link) {
-                link.addEventListener('click', function () {
-                    closeMenu();
-                });
+            // 窗口调整到移动端尺寸时自动关闭
+            window.addEventListener('resize', function () {
+                if (window.innerWidth < 1200 && panel.classList.contains('show')) {
+                    closePanel();
+                }
             });
+        });
+
+        // Toast 弹窗自动关闭与手动关闭逻辑
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastItems = document.querySelectorAll('.toast-item');
+            if (!toastItems.length) return;
+
+            toastItems.forEach(function (toast) {
+                var isWelcome = toast.classList.contains('toast-welcome');
+                var isError = toast.classList.contains('toast-error');
+                var duration = isWelcome ? 3500 : (isError ? 6000 : 4000);
+
+                if (isWelcome) {
+                    setTimeout(function () {
+                        dismissToast(toast);
+                    }, duration);
+                } else {
+                    var timer = setTimeout(function () {
+                        dismissToast(toast);
+                    }, duration);
+
+                    toast.addEventListener('mouseenter', function () {
+                        clearTimeout(timer);
+                    });
+
+                    toast.addEventListener('mouseleave', function () {
+                        timer = setTimeout(function () {
+                            dismissToast(toast);
+                        }, duration);
+                    });
+                }
+
+                var closeBtn = toast.querySelector('.toast-close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function () {
+                        dismissToast(toast);
+                    });
+                }
+            });
+
+            function dismissToast(toast) {
+                if (toast.classList.contains('toast-exit')) return;
+                toast.classList.add('toast-exit');
+                toast.addEventListener('animationend', function handler() {
+                    toast.removeEventListener('animationend', handler);
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                });
+            }
         });
     </script>
     {% block extra_js %}{% endblock %}
